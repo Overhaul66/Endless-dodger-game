@@ -1,0 +1,245 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <title>canvas</title>
+        <style>
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+canvas {
+  background-color: #ccc;
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+}
+            
+        </style>
+    </head>
+    <body>
+        <canvas width="330" height="400" id="canvas">
+            Your browser doesnt support canvas
+        </canvas>
+
+        <body>
+    <script>
+    
+   class GameObject {
+       constructor (context,x,y,vx,vy) {
+           this.context = context;
+           this.x = x;
+           this.y = y;
+           this.vx = vx;
+           this.vy = vy;
+           
+           this.isColliding = false;
+       }
+   }
+   
+   class Obstacle extends GameObject {
+       constructor (context, x,y,vx,vy) {
+         super(context,x,y,vx,vy);
+         this.width = 60;
+         this.height = 13;
+       }
+       
+       update(secondsPassed) {
+         this.y +=  secondsPassed * this.vy;
+       }
+       
+       draw() {
+         this.context.fillStyle = "red";
+         this.context.fillRect(this.x,this.y,this.width, this.height)
+       }
+   }
+   
+   class Player extends GameObject {
+       constructor(context,x,y,vx,vy) {
+           super(context,x,y,vx,vy);
+       
+           this.width = 50;
+           this.height = 50;
+           this.y = 500;
+    }
+       
+       draw() {
+         this.context.fillStyle = this.isColliding ? "black":"orange";
+           this.context.fillRect(this.x,this.y,this.width,this.height);
+       }
+        
+       update(secondsPassed, x ) {
+         this.x = x;
+       }
+  
+   }
+      
+    let canvas;
+    let ctx;
+    let secondsPassed;
+    let oldTimeStamp = 0;
+    let obstacles = [];
+    let player;
+    let drag = false;
+    let xPos;
+    let yPos;
+    
+    const OBSTACLE_SPEED = 150;
+   
+    window.onload = init;
+    
+    function init() {
+         canvas = document.getElementById("canvas");
+         ctx = canvas.getContext("2d");
+         player = new Player(ctx, canvas.width/2,500, 0, 0)
+         
+         
+     canvas.width = window.innerWidth;
+     canvas.height = window.innerHeight;
+ 
+    canvas.addEventListener("touchstart", function (e) {
+        let touch_event = e.touches[0];
+        xPos = getTouchXPosition(touch_event.clientX);
+        yPos = getTouchYPosition(touch_event.clientY)
+        
+        if(touchInPlayer(player, xPos, yPos))
+          drag = true;
+        else
+          drag = false;
+    })
+    
+    canvas.addEventListener("touchend",function (e) {
+          drag = false;
+    })
+    
+    canvas.addEventListener("touchmove", function (e) {
+     if(drag) {
+        let touch_event = e.touches[0];
+        xPos = getTouchXPosition(touch_event.clientX);
+        yPos = getTouchYPosition(touch_event.clientY)
+    
+         player.update(secondsPassed, xPos, 500);
+     }
+    })
+        
+         window.requestAnimationFrame(gameloop);
+         
+   }
+   
+setInterval(createObstacles, 1000);
+ 
+    function gameloop(timestamp) {
+       secondsPassed = (timestamp - oldTimeStamp) / 1000;
+       oldTimeStamp = timestamp;
+       secondsPassed = Math.min(secondsPassed,0.1);
+       
+       //update
+       for(var v in obstacles) {
+         obstacles[v].update(secondsPassed)
+       }
+       
+       
+      
+        //detect collsions
+        //detectCollisions();
+        
+       //clear
+       clearCanvas();
+       
+       //draw
+       player.draw();
+       //draw obstacles
+       for(var v in obstacles) {
+         obstacles[v].draw();
+       }
+       
+       
+     window.requestAnimationFrame(gameloop);
+   }
+     
+     //nothing yet
+    function createObstacles() {
+        
+    }
+    
+    function clearCanvas() {
+        ctx.clearRect(0,0,canvas.width,canvas.height );
+    }
+     
+    function detectCollisions() {
+        let obj1;
+        let obj2;
+        
+        for(var t in squares)
+            squares[t].isColliding = false;
+        
+        for(var t =0; t < squares.length;++t) {
+            obj1 = squares[t];
+           for(var j = t + 1; j < squares.length; ++j) {
+                obj2 = squares[j];
+if(rectintersect(obj1.x,obj1.y,obj1.width,obj1.height,obj2.x,obj2.y,obj2.width,obj2.height)) {
+    obj1.isColliding = true;
+    obj2.isColliding = true;
+}
+    
+            }
+        }
+    }
+    
+    function rectintersect(x1,y1,w1,h1,x2,y2,w2,h2) {
+if (x2 > w1 + x1 || x1 > w2 + x2 || y2 > h1 + y1 || y1 > h2 + y2){
+        return false;
+    }
+    return true;
+    }
+    
+   //get the x coodinate of the mouse relative to the canvas
+    function getTouchXPosition(xPos) {
+       let rect = canvas.getBoundingClientRect();
+          return xPos - rect.left;
+    }
+    
+    //get the y coodinate of the mouse relative to the canvas
+    function getTouchYPosition(yPos) {
+      let rect = canvas.getBoundingClientRect();
+      return yPos - rect.top;
+    }
+    
+    //check if touch is within player
+    function touchInPlayer(shape,mx,my) {
+        var rLeft=shape.x;
+        var rRight=shape.x+shape.width;
+        var rTop=shape.y;
+        var rBott=shape.y+shape.height;
+        // math test to see if mouse is inside rectangle
+        if( mx>rLeft && mx<rRight && my>rTop && my<rBott){
+            return(true);
+        }
+        else {
+          return false;
+        }
+    }
+    
+    function createObstacles() {
+      let rX = Math.floor(Math.random() * 200);
+      let rW = (Math.ceil(Math.random() * 10) + 5) * 10;
+      
+      let obstacle = new Obstacle(ctx,rX, 0, 0, OBSTACLE_SPEED);
+      obstacle.width = rW;
+      obstacles.push(obstacle);
+    }
+    
+    function deleteObstacle() {
+      //delete obstacle if it moves out of a screen
+    }
+       
+    
+    </script>
+</html>
